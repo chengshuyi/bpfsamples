@@ -26,7 +26,7 @@ struct
 
 
 // https://github.com/jsitnicki/ebpf-summit-2020
-SEC("sk_lookup/example")
+SEC("sk_lookup")
 int sk_lookup_example(struct bpf_sk_lookup *ctx)
 {
 
@@ -37,6 +37,8 @@ int sk_lookup_example(struct bpf_sk_lookup *ctx)
 	long err;
 
 	port = ctx->local_port;
+	bpf_printk("port is %u\n", port);
+
 	open = bpf_map_lookup_elem(&ports, &port);
 	if (!open)
 		return SK_PASS;
