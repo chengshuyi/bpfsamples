@@ -1,4 +1,7 @@
 [workspace]
 members = [
     "tracing/fentry",
+    "tracing/iter",
+
+    "sk_lookup",
 ]
