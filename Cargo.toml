@@ -1,8 +1,10 @@
 [workspace]
 members = [
+    "socket",               # BPF_PROG_TYPE_SOCKET_FILTER
     "tracing/fentry",
     "tracing/iter",
 
     "sk_lookup",
-    "lsm"
+    "lsm",
+    "btfparse",
 ]
