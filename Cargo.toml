@@ -2,7 +2,9 @@
 members = [
     "socket",               # 01-BPF_PROG_TYPE_SOCKET_FILTER
     "kprobe",
+    "sockops",              # 13-BPF_PROG_TYPE_SOCK_OPS
     "sk_skb",               # 14-BPF_PROG_TYPE_SK_SKB
+    "sk_msg",               # 16-BPF_PROG_TYPE_SK_MSG
     "tracing/fentry",
     "tracing/iter",         
 

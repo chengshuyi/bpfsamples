@@ -1,0 +1,15 @@
+[package]
+name = "sockops"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+cgroups-rs = "0.3.2"
+libbpf-rs = "0.20"
+libc = "0.2.144"
+
+[build-dependencies]
+libbpf-cargo = "0.20"
+bindgen = "0.60.1"

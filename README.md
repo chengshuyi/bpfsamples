@@ -27,7 +27,12 @@
 18:24:07.391314 IP 127.0.0.1.33176 > 127.0.0.1.5201: Flags [.], ack 13, win 128, options [nop,nop,TS val 593094991 ecr 593094991], length 0
 ```
 
+## 13-BPF_PROG_TYPE_SOCK_OPS
 
+```shell
+cargo run -p sockops
+cat /sys/kernel/debug/tracing/trace_pipe
+```
 
 ## BPF_PROG_TYPE_SK_LOOKUP
 
