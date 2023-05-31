@@ -7,6 +7,7 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1.0.71"
+chrono = "0.4.26"
 libbpf-rs = "0.20"
 once_cell = "1.17.1"
 plain = "0.2.3"

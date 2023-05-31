@@ -16,11 +16,25 @@ struct
     __uint(value_size, sizeof(u32));
 } events SEC(".maps");
 
+struct softirq_key
+{
+    u32 pid;
+    u32 cpu;
+};
+
+struct
+{
+    __uint(type, BPF_MAP_TYPE_HASH);
+    __uint(max_entries, 102400);
+    __uint(key_size, sizeof(struct softirq_key));
+    __uint(value_size, sizeof(u64));
+} softirq_map SEC(".maps");
+
 // skb_recv_done
 static void __always_inline push_event(void *ctx, int type)
 {
     struct event event = {};
-    event.ts = bpf_ktime_get_boot_ns();
+    event.ts = bpf_ktime_get_ns();
     event.type = type;
     bpf_get_current_comm(event.comm, sizeof(event.comm));
     bpf_perf_event_output(ctx, &events, BPF_F_CURRENT_CPU, &event, sizeof(event));
@@ -111,10 +125,56 @@ int tp_napi_gro_receive_entry(struct napi_gro_receive_entry_args *args)
 
                 if (source == 2031)
                 {
-                    push_event(args, SKB);
+                    struct softirq_key key = {};
+                    key.cpu = bpf_get_smp_processor_id();
+                    key.pid = bpf_get_current_pid_tgid();
+                    u64 *res = bpf_map_lookup_elem(&softirq_map, &key);
+                    struct event event = {};
+                    event.type = ERROR;
+                    if (res)
+                    {
+                        event.ts = bpf_ktime_get_ns();
+                        event.softirq_ts = *res;
+                        event.type = SKB;
+                    }
+                    bpf_get_current_comm(event.comm, sizeof(event.comm));
+                    bpf_perf_event_output(args, &events, BPF_F_CURRENT_CPU, &event, sizeof(event));
                 }
             }
         }
+    }
+    return 0;
+}
+
+struct softirq_entry_args
+{
+    u32 pad[2];
+    u32 vec_nr;
+};
+
+SEC("tracepoint/irq/softirq_entry")
+int tp_softirq_entry(struct softirq_entry_args *args)
+{
+    if (args->vec_nr == NET_RX_SOFTIRQ)
+    {
+        u64 ts = bpf_ktime_get_ns();
+        struct softirq_key key = {};
+        key.cpu = bpf_get_smp_processor_id();
+        key.pid = bpf_get_current_pid_tgid();
+        bpf_map_update_elem(&softirq_map, &key, &ts, BPF_ANY);
+    }
+    return 0;
+}
+
+SEC("tracepoint/irq/softirq_exit")
+int tp_softirq_exit(struct softirq_entry_args *args)
+{
+    if (args->vec_nr == NET_RX_SOFTIRQ)
+    {
+        struct softirq_key key = {};
+        key.cpu = bpf_get_smp_processor_id();
+        key.pid = bpf_get_current_pid_tgid();
+        bpf_map_delete_elem(&softirq_map, &key);
     }
     return 0;
 }
