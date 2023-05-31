@@ -11,7 +11,7 @@ fn main() {
     let skel_builder = KprobeSkelBuilder::default();
     let open_skel = skel_builder.open().unwrap();
     let mut skel = open_skel.load().unwrap();
-    skel.attach().unwrap();
+    let _link = skel.progs_mut().tp_napi_gro_receive_entry().attach().unwrap();
 
     let handle_event = move |cpu: i32, data: &[u8]| {
         let mut data_vec = data.to_vec();

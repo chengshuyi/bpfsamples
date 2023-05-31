@@ -26,50 +26,93 @@ static void __always_inline push_event(void *ctx, int type)
     bpf_perf_event_output(ctx, &events, BPF_F_CURRENT_CPU, &event, sizeof(event));
 }
 
-// hardware irq
-SEC("kprobe/skb_recv_done")
-int BPF_KPROBE(skb_recv_done, int x)
-{
-    push_event(ctx, IRQ);
-    return 0;
-}
+// // hardware irq
+// SEC("kprobe/skb_recv_done")
+// int BPF_KPROBE(skb_recv_done, int x)
+// {
+//     push_event(ctx, IRQ);
+//     return 0;
+// }
 
-// software irq
-SEC("kprobe/net_rx_action")
-int BPF_KPROBE(net_rx_action, int x)
-{
-    push_event(ctx, SOFTIRQ);
-    return 0;
-}
+// // software irq
+// SEC("kprobe/net_rx_action")
+// int BPF_KPROBE(net_rx_action, int x)
+// {
+//     push_event(ctx, SOFTIRQ);
+//     return 0;
+// }
+
+// struct netif_receive_skb_args
+// {
+//     u32 pad[2];
+//     struct sk_buff *skb;
+// };
+// SEC("tracepoint/net/netif_receive_skb")
+// int tp_netif_receive_skb(struct netif_receive_skb_args *args)
+// {
+//     u16 network_header, transport_header, source;
+//     char *head;
+//     struct iphdr ih = {};
+//     struct tcphdr th = {};
+//     struct sk_buff *skb = args->skb;
+
+//     bpf_probe_read(&head, sizeof(head), &skb->head);
+//     bpf_probe_read(&network_header, sizeof(network_header), &skb->network_header);
+//     if (network_header != 0)
+//     {
+//         bpf_probe_read(&ih, sizeof(ih), head + network_header);
+//         if (ih.protocol == IPPROTO_TCP)
+//         {
+//             transport_header = network_header + (ih.ihl << 2);
+//             bpf_probe_read(&th, sizeof(th), head + transport_header);
+//             source = bpf_ntohs(th.source);
+
+//             if (source == 2031)
+//             {
+//                 push_event(args, SKB);
+//             }
+//         }
+//     }
+//     return 0;
+// }
 
 struct napi_gro_receive_entry_args
 {
     u32 pad[2];
+    u32 pad2[4];
     struct sk_buff *skb;
 };
-SEC("tracepoint/net/netif_receive_skb")
-int tp_netif_receive_skb(struct napi_gro_receive_entry_args *args)
+
+SEC("tracepoint/net/napi_gro_receive_entry")
+int tp_napi_gro_receive_entry(struct napi_gro_receive_entry_args *args)
 {
-    u16 network_header, transport_header, source;
+    u16 mac_header, network_header, transport_header, source, protocol;
     char *head;
+    struct ethhdr eh = {};
     struct iphdr ih = {};
     struct tcphdr th = {};
     struct sk_buff *skb = args->skb;
-
     bpf_probe_read(&head, sizeof(head), &skb->head);
-    bpf_probe_read(&network_header, sizeof(network_header), &skb->network_header);
-    if (network_header != 0)
-    {
-        bpf_probe_read(&ih, sizeof(ih), head + network_header);
-        if (ih.protocol == IPPROTO_TCP)
-        {
-            transport_header = network_header + (ih.ihl << 2);
-            bpf_probe_read(&th, sizeof(th), head + transport_header);
-            source = bpf_ntohs(th.source);
+    bpf_probe_read(&mac_header, sizeof(mac_header), &skb->mac_header);
 
-            if (source == 2031)
+    if (mac_header != 0)
+    {
+        bpf_probe_read(&eh, sizeof(eh), head + mac_header);
+        protocol = bpf_ntohs(eh.h_proto);
+        if (protocol == 0x0800)
+        {
+            network_header = mac_header + 14;
+            bpf_probe_read(&ih, sizeof(ih), head + network_header);
+            if (ih.protocol == IPPROTO_TCP)
             {
-                push_event(args, SKB);
+                transport_header = network_header + (ih.ihl << 2);
+                bpf_probe_read(&th, sizeof(th), head + transport_header);
+                source = bpf_ntohs(th.source);
+
+                if (source == 2031)
+                {
+                    push_event(args, SKB);
+                }
             }
         }
     }
