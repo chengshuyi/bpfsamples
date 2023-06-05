@@ -30,6 +30,14 @@ struct
     __uint(value_size, sizeof(u64));
 } softirq_map SEC(".maps");
 
+struct
+{
+    __uint(type, BPF_MAP_TYPE_ARRAY);
+    __uint(max_entries, 1024);
+    __uint(key_size, sizeof(u32));
+    __uint(value_size, sizeof(u64));
+} hardirq_map SEC(".maps");
+
 // skb_recv_done
 static void __always_inline push_event(void *ctx, int type)
 {
@@ -137,6 +145,11 @@ int tp_napi_gro_receive_entry(struct napi_gro_receive_entry_args *args)
                         event.softirq_ts = *res;
                         event.type = SKB;
                     }
+                    res = bpf_map_lookup_elem(&hardirq_map, &key.cpu);
+                    if (res)
+                        event.hardirq_ts = *res;
+                    event.sip = ih.saddr;
+                    event.dip = ih.daddr;
                     bpf_get_current_comm(event.comm, sizeof(event.comm));
                     bpf_perf_event_output(args, &events, BPF_F_CURRENT_CPU, &event, sizeof(event));
                 }
@@ -176,6 +189,17 @@ int tp_softirq_exit(struct softirq_entry_args *args)
         key.pid = bpf_get_current_pid_tgid();
         bpf_map_delete_elem(&softirq_map, &key);
     }
+    return 0;
+}
+
+SEC("kprobe/skb_recv_done")
+int BPF_KPROBE(skb_recv_done)
+{
+    int cpu = bpf_get_smp_processor_id();
+
+    u64 *ts = bpf_map_lookup_elem(&hardirq_map, &cpu);
+    if (ts)
+        *ts = bpf_ktime_get_ns();
     return 0;
 }
 char _license[] SEC("license") = "GPL";
