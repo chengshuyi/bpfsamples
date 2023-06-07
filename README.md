@@ -34,6 +34,49 @@ cargo run -p sockops
 cat /sys/kernel/debug/tracing/trace_pipe
 ```
 
+## 14-BPF_PROG_TYPE_SK_SKB
+
+```
+client -> proxy:5201 -> backend
+完整的路径是：
+client -> proxy:5201 -> proxy -> backend: 5202
+也就是客户端将报文先发给代理，代理收到报文后再发送给backend
+```
+
+```
+cargo run -p sk_skb 
+```
+可以看到如下输出
+
+```
+client send: i'm client
+proxy server receive: i'm client
+proxy client send: i'm client
+backend server receive: i'm client
+client send: i'm client
+proxy server receive: i'm client
+proxy client send: i'm client
+backend server receive: i'm client
+insert client-to-proxy socketfd[7] into sockets map with key 0
+insert client socketfd[4] into sockets map with key 1
+client send: i'm client
+backend server receive: i'm client
+client send: i'm client
+backend server receive: i'm client
+client send: i'm client
+backend server receive: i'm client
+client send: i'm client
+backend server receive: i'm client
+```
+发现，proxy server和proxy client已经开始收不到报文了，因为全在内核态进行转发。
+
+## 16-BPF_PROG_TYPE_SK_MSG
+
+```shell
+cargo run -p sk_msg
+tcpdump -i lo port 5201
+```
+
 ## BPF_PROG_TYPE_SK_LOOKUP
 
 可以将指定报文理由给指定socket，即使该socket没有监听该端口。
