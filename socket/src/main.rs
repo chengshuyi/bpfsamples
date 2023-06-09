@@ -1,9 +1,7 @@
 include!(concat!(env!("OUT_DIR"), "/socket.rs"));
 include!(concat!(env!("OUT_DIR"), "/socket.skel.rs"));
 
-use core::slice;
 use std::{
-    fs::File,
     io::{Read, Write},
     net::TcpListener,
     os::fd::AsRawFd,

@@ -3,12 +3,12 @@
 
 ## 01 BPF_PROG_TYPE_SOCKET_FILTER
 
-演示socket filter截取报文的功能。
+演示socket filter截断报文的功能。
 
 
 运行流程如下：
 
-- `cargo run -p sk_lookup` 启动该程序，该程序做了：
+- `cargo run -p socket` 启动该程序，该程序做了：
   - 监听5201端口
   - 加载socket filter程序，截断收到的"hello world"
 
@@ -26,6 +26,10 @@
 18:24:07.391301 IP 127.0.0.1.5201 > 127.0.0.1.33176: Flags [P.], seq 6:13, ack 12, win 128, options [nop,nop,TS val 593094991 ecr 593094991], length 7
 18:24:07.391314 IP 127.0.0.1.33176 > 127.0.0.1.5201: Flags [.], ack 13, win 128, options [nop,nop,TS val 593094991 ecr 593094991], length 0
 ```
+
+# 06-BPF_PROG_TYPE_XDP
+
+denycimp: 丢掉lo口的所有icmp包。
 
 ## 13-BPF_PROG_TYPE_SOCK_OPS
 
