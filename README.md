@@ -31,6 +31,12 @@
 
 denycimp: 丢掉lo口的所有icmp包。
 
+## 08-BPF_PROG_TYPE_CGROUP_SKB
+
+cargo run -p cgroup_skb
+
+
+
 ## 13-BPF_PROG_TYPE_SOCK_OPS
 
 ```shell
